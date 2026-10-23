@@ -91,11 +91,17 @@ function Decode({ text, speed = 26, per = 3 }: { text: string; speed?: number; p
 }
 
 function KineticText({ text, step = 24 }: { text: string; step?: number }) {
+  let n = 0;
   return (
     <>
-      {text.split("").map((ch, i) => (
-        <span key={`${i}-${ch}`} className="kt" style={{ animationDelay: `${i * step}ms` }}>
-          {ch === " " ? "\u00A0" : ch}
+      {text.split(" ").map((word, w) => (
+        <span key={`${w}-${word}`} className="inline-block whitespace-nowrap">
+          {word.split("").map((ch, i) => (
+            <span key={`${i}-${ch}`} className="kt" style={{ animationDelay: `${n++ * step}ms` }}>
+              {ch}
+            </span>
+          ))}
+          {"\u00A0"}
         </span>
       ))}
     </>
@@ -682,7 +688,7 @@ function Scanner() {
                       <h1
                         key={`${phase}-${weak}`}
                         aria-label={titleText}
-                        className={`font-display text-2xl uppercase tracking-[0.15em] md:text-3xl ${
+                        className={`font-display text-2xl uppercase tracking-[0.15em] md:text-2xl ${
                           denied || weak ? "text-destructive" : "text-glow"
                         }`}
                       >
@@ -705,7 +711,7 @@ function Scanner() {
                       aria-valuemin={0}
                       aria-valuemax={100}
                       aria-valuenow={Math.round(progress * 100)}
-                      className="pointer-events-none absolute h-[min(76vw,62vh)] w-[min(76vw,62vh)]"
+                      className="pointer-events-none absolute h-[min(76vw,54vh)] w-[min(76vw,54vh)]"
                     >
                       {idle && (
                         <g className="spin-fast" style={{ transformOrigin: "100px 100px" }}>
@@ -776,7 +782,7 @@ function Scanner() {
                           }
                         }}
                         onContextMenu={(e) => e.preventDefault()}
-                        className={`relative aspect-[250/400] w-[min(46vw,40vh)] select-none overflow-hidden rounded-[2rem] border-2 bg-card/50 backdrop-blur-sm transition-all duration-500 ${
+                        className={`relative aspect-[250/400] w-[min(46vw,34vh)] select-none overflow-hidden rounded-[2rem] border-2 bg-card/50 backdrop-blur-sm transition-all duration-500 ${
                           denied
                             ? `shake border-destructive shadow-[0_0_60px_oklch(0.65_0.22_25/0.5)]`
                             : weak
