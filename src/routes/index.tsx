@@ -794,12 +794,6 @@ function Scanner() {
                           <span key={scanId} aria-hidden="true" className="ripple" />
                         )}
                         <HandSvg active={active} progress={progress} touched={tips} />
-                        {scanning && (
-                          <div
-                            className="scanline"
-                            style={{ animationDuration: `${Math.max(0.5, 2.2 - progress * 1.5)}s` }}
-                          />
-                        )}
                         {weak && (
                           <div className="absolute inset-0 animate-pulse bg-destructive/10" />
                         )}
