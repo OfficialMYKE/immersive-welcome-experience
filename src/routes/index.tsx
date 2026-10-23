@@ -1,6 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import handScan from "@/assets/hand-scan.jpg";
+import handScan from "@/assets/hand-scan.png";
 import { AsciiOrb, type AsciiOrbState } from "@/components/ascii-orb";
 import { beep, keepAwake, speak, startHum, stopHum, sweep, vibrate } from "@/lib/fx";
 import {

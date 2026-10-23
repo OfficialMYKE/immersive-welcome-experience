@@ -547,4 +547,3 @@
 .hand-lit {
   filter: brightness(1.25) saturate(1.2) drop-shadow(0 0 8px var(--primary));
 }
-.hand-base, .hand-lit { mix-blend-mode: screen; }
