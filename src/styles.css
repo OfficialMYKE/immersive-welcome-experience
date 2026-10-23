@@ -533,3 +533,17 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+/* realistic hand scan imagery */
+.hand-base {
+  opacity: 0.35;
+  filter: saturate(0.6) brightness(0.8);
+  transition: opacity 0.6s, filter 0.6s;
+}
+.hand-base.on {
+  opacity: 0.25;
+  filter: saturate(0.3) brightness(0.6);
+}
+.hand-lit {
+  filter: brightness(1.25) saturate(1.2) drop-shadow(0 0 8px var(--primary));
+}

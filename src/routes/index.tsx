@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
+import handScan from "@/assets/hand-scan.jpg";
 import { AsciiOrb, type AsciiOrbState } from "@/components/ascii-orb";
 import { beep, keepAwake, speak, startHum, stopHum, sweep, vibrate } from "@/lib/fx";
 import {
@@ -666,11 +667,11 @@ function Scanner() {
                 <AnalysisView analysis={analysis} stage={stage} systemName={cfg.systemName} target={who} />
               ) : (
                 <>
-                  <div className="flex items-center gap-5">
+                  <div className="flex flex-col items-center gap-2 text-center">
                     <AsciiOrb
                       state={orb}
-                      size="min(120px, 16vh)"
-                      fontSize={7}
+                      size="min(70px, 9vh)"
+                      fontSize={5}
                       glow={0.8}
                       color={denied || weak ? "oklch(0.65 0.22 25)" : "oklch(0.82 0.14 195)"}
                     />
@@ -1091,33 +1092,17 @@ const DECOYS = [
   "J. Robles", "E. Salinas", "P. Herrera", "D. Molina", "V. Cárdenas", "N. Paredes",
 ];
 
-// Palm creases + vein network revealed progressively while scanning.
-const VEINS = [
-  "M70 300 C95 270 140 262 195 275",
-  "M100 250 C125 240 160 236 205 245",
-  "M110 330 C130 300 150 290 190 290",
-  "M110 360 C112 320 120 290 108 250 L108 140",
-  "M137 355 C138 310 140 270 137 220 L137 95",
-  "M160 350 C162 310 165 270 167 225 L167 105",
-  "M180 340 C188 300 195 270 196 230 L196 140",
-  "M108 250 C90 245 72 238 60 232",
-  "M137 220 C150 230 158 240 167 225",
-];
 
 const FINGERS = [
-  { key: "pul", label: "Pul", x: 55, y: 228 },
-  { key: "ind", label: "Índ", x: 108, y: 120 },
-  { key: "med", label: "Med", x: 137, y: 80 },
-  { key: "anu", label: "Anu", x: 167, y: 90 },
-  { key: "men", label: "Meñ", x: 196, y: 125 },
+  { key: "pul", label: "Pul", x: 219, y: 164 },
+  { key: "ind", label: "Índ", x: 160, y: 45 },
+  { key: "med", label: "Med", x: 113, y: 24 },
+  { key: "anu", label: "Anu", x: 73, y: 43 },
+  { key: "men", label: "Meñ", x: 29, y: 88 },
 ] as const;
 const FINGER_TONES = [523, 587, 659, 740, 831];
-const HIT_R = 26;
+const HIT_R = 34;
 
-const HAND_PATH =
-  "M95 380 C70 330 55 290 40 240 C32 215 52 200 68 220 L95 260 L95 110 C95 92 122 92 122 110 " +
-  "L122 220 L122 70 C122 50 152 50 152 70 L152 215 L152 80 C152 60 182 60 182 80 L182 220 " +
-  "L182 115 C182 97 210 97 210 115 L210 270 C210 330 190 360 175 380 Z";
 
 function HandSvg({
   active,
@@ -1128,54 +1113,71 @@ function HandSvg({
   progress: number;
   touched: boolean[];
 }) {
+  const reveal = 400 * (1 - progress);
   return (
     <svg
       viewBox="0 0 250 400"
-      className={`pointer-events-none absolute inset-0 m-auto h-[82%] w-[82%] transition-all duration-500 ${
-        active ? "text-primary" : "text-primary/60"
-      }`}
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="3"
-      strokeLinecap="round"
-      strokeLinejoin="round"
+      className="pointer-events-none absolute inset-0 m-auto h-[82%] w-[82%]"
       aria-hidden="true"
     >
-      <path
-        d={HAND_PATH}
-        className={active ? undefined : "hand-march"}
-        strokeDasharray={active ? "0" : "8 8"}
-        style={active ? { filter: "drop-shadow(0 0 6px var(--primary))" } : undefined}
-      />
-      {active &&
-        VEINS.map((d, i) => (
-          <path
-            key={d}
-            d={d}
-            pathLength={1}
-            strokeWidth="1.4"
-            strokeDasharray="1 1"
-            strokeDashoffset={1 - Math.min(1, Math.max(0, progress * 1.6 - i * 0.07))}
-            opacity=".55"
-            style={{ filter: "drop-shadow(0 0 3px var(--primary))" }}
+      <defs>
+        <clipPath id="hand-reveal">
+          <rect x="0" y={reveal} width="250" height={400 - reveal} />
+        </clipPath>
+        <linearGradient id="hand-fade" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0.75" stopColor="#fff" />
+          <stop offset="1" stopColor="#000" />
+        </linearGradient>
+        <mask id="hand-mask">
+          <rect width="250" height="400" fill="url(#hand-fade)" />
+        </mask>
+      </defs>
+      <g mask="url(#hand-mask)">
+        <image
+          href={handScan}
+          width="250"
+          height="400"
+          className={`hand-base ${active ? "on" : ""}`}
+          preserveAspectRatio="xMidYMid slice"
+        />
+        {active && (
+          <image
+            href={handScan}
+            width="250"
+            height="400"
+            clipPath="url(#hand-reveal)"
+            className="hand-lit"
+            preserveAspectRatio="xMidYMid slice"
           />
-        ))}
+        )}
+      </g>
+      {active && progress < 1 && (
+        <line
+          x1="0"
+          x2="250"
+          y1={reveal}
+          y2={reveal}
+          stroke="var(--primary)"
+          strokeWidth="1.5"
+          style={{ filter: "drop-shadow(0 0 6px var(--primary))" }}
+        />
+      )}
       {FINGERS.map((f, i) => {
-        const lit = progress > (i + 1) / (FINGERS.length + 1);
-        const on = touched[i] === true || lit;
+        const on = touched[i] === true;
         return (
-          <circle
-            key={f.key}
-            cx={f.x}
-            cy={f.y}
-            r={on ? 7 : 4}
-            fill={touched[i] ? "var(--success)" : lit ? "var(--primary)" : "none"}
-            opacity={on ? 1 : 0.4}
-            style={{
-              transition: "all .3s",
-              filter: on ? "drop-shadow(0 0 6px var(--primary))" : undefined,
-            }}
-          />
+          <g key={f.key} style={{ transition: "opacity .3s" }} opacity={on ? 1 : 0.35}>
+            <circle
+              cx={f.x}
+              cy={f.y}
+              r={on ? 16 : 13}
+              fill="none"
+              stroke={on ? "var(--success)" : "var(--primary)"}
+              strokeWidth="1"
+              strokeDasharray={on ? "0" : "3 3"}
+              style={{ transition: "all .3s", filter: on ? "drop-shadow(0 0 5px var(--success))" : undefined }}
+            />
+            <circle cx={f.x} cy={f.y} r="1.6" fill={on ? "var(--success)" : "var(--primary)"} />
+          </g>
         );
       })}
     </svg>
