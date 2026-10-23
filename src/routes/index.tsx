@@ -1,7 +1,7 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AsciiOrb, type AsciiOrbState } from "@/components/ascii-orb";
-import { beep, keepAwake, speak, startHum, stopHum, vibrate } from "@/lib/fx";
+import { beep, keepAwake, speak, startHum, stopHum, sweep, vibrate } from "@/lib/fx";
 import {
   defaultConfig,
   fillTemplate,
@@ -298,6 +298,7 @@ function Scanner() {
     setPhase("analyzing");
     setOrb("thinking");
     fx.vib([60, 60, 60]);
+    if (cfg.sound) sweep(1.2, 200, 4000, 0.05);
     const c = loadConfig();
     const list = c.participants;
     const p = (list.length ? list[c.nextIndex % list.length] : null) ?? null;
@@ -367,6 +368,7 @@ function Scanner() {
     const step = Math.floor(p * 24);
     if (step !== lastTick.current) {
       lastTick.current = step;
+      if (step % 6 === 0 && c.sound) sweep(0.5, 300 + step * 40, 2400 + step * 60, 0.03);
       fx.vib(12 + step);
       fx.beep(420 + step * 28, 0.035, "square", 0.025);
     }
@@ -661,7 +663,7 @@ function Scanner() {
           <section className="relative z-10 flex flex-1 flex-col items-center justify-center gap-4 px-6">
             {!granted ? (
               analyzing ? (
-                <AnalysisView analysis={analysis} stage={stage} systemName={cfg.systemName} />
+                <AnalysisView analysis={analysis} stage={stage} systemName={cfg.systemName} target={who} />
               ) : (
                 <>
                   <div className="flex items-center gap-5">
@@ -953,12 +955,30 @@ function AnalysisView({
   analysis,
   stage,
   systemName,
+  target,
 }: {
   analysis: number;
   stage: number;
   systemName: string;
+  target: Participant | null;
 }) {
   const pct = Math.round(analysis * 100);
+  const [cand, setCand] = useState({ id: "", name: "", score: 0 });
+  const locked = stage >= 2;
+  useEffect(() => {
+    if (locked) return;
+    const id = window.setInterval(() => {
+      setCand({
+        id: `#${Math.random().toString(36).slice(2, 8).toUpperCase()}`,
+        name: DECOYS[Math.floor(Math.random() * DECOYS.length)] ?? "",
+        score: 40 + Math.random() * 50,
+      });
+    }, 70);
+    return () => clearInterval(id);
+  }, [locked]);
+  const shown = locked
+    ? { id: `#${(target?.id || "0000").toUpperCase()}`, name: target?.name || "Agente", score: 99.98 }
+    : cand;
   return (
     <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 bg-background/85 px-6 backdrop-blur-[3px]">
       <p className="rise font-display text-xs uppercase tracking-[0.5em] text-muted-foreground">
@@ -972,6 +992,20 @@ function AnalysisView({
           glow={0.9}
           color="oklch(0.82 0.14 195)"
         />
+      </div>
+      <div
+        className={`w-[min(88vw,560px)] rounded-xl border bg-card/80 px-5 py-3 font-mono text-sm backdrop-blur transition-colors ${
+          locked ? "border-success/60 text-success" : "border-primary/30 text-muted-foreground"
+        }`}
+      >
+        <div className="flex items-center justify-between text-[10px] uppercase tracking-[0.3em]">
+          <span>{locked ? "Coincidencia encontrada" : "Buscando en 48.213 registros"}</span>
+          <span>{shown.score.toFixed(2)}%</span>
+        </div>
+        <div className="mt-1 flex items-center justify-between font-display text-lg">
+          <span className={locked ? "text-glow-success" : ""}>{shown.name}</span>
+          <span className="text-xs">{shown.id}</span>
+        </div>
       </div>
       <div className="w-[min(88vw,560px)] space-y-2 rounded-xl border border-primary/30 bg-card/80 p-5 font-mono text-sm backdrop-blur">
         {ANALYZE.map((t, i) => {
@@ -1052,6 +1086,24 @@ function Info({ k, v }: { k: string; v: string }) {
   );
 }
 
+const DECOYS = [
+  "R. Valdés", "M. Ortega", "S. Ibarra", "L. Ferrer", "A. Navarro", "C. Duarte",
+  "J. Robles", "E. Salinas", "P. Herrera", "D. Molina", "V. Cárdenas", "N. Paredes",
+];
+
+// Palm creases + vein network revealed progressively while scanning.
+const VEINS = [
+  "M70 300 C95 270 140 262 195 275",
+  "M100 250 C125 240 160 236 205 245",
+  "M110 330 C130 300 150 290 190 290",
+  "M110 360 C112 320 120 290 108 250 L108 140",
+  "M137 355 C138 310 140 270 137 220 L137 95",
+  "M160 350 C162 310 165 270 167 225 L167 105",
+  "M180 340 C188 300 195 270 196 230 L196 140",
+  "M108 250 C90 245 72 238 60 232",
+  "M137 220 C150 230 158 240 167 225",
+];
+
 const FINGERS = [
   { key: "pul", label: "Pul", x: 55, y: 228 },
   { key: "ind", label: "Índ", x: 108, y: 120 },
@@ -1096,8 +1148,17 @@ function HandSvg({
         style={active ? { filter: "drop-shadow(0 0 6px var(--primary))" } : undefined}
       />
       {active &&
-        [150, 190, 230, 270, 310, 350].map((y) => (
-          <line key={y} x1="100" x2="200" y1={y} y2={y} opacity=".2" />
+        VEINS.map((d, i) => (
+          <path
+            key={d}
+            d={d}
+            pathLength={1}
+            strokeWidth="1.4"
+            strokeDasharray="1 1"
+            strokeDashoffset={1 - Math.min(1, Math.max(0, progress * 1.6 - i * 0.07))}
+            opacity=".55"
+            style={{ filter: "drop-shadow(0 0 3px var(--primary))" }}
+          />
         ))}
       {FINGERS.map((f, i) => {
         const lit = progress > (i + 1) / (FINGERS.length + 1);
